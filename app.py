@@ -4,10 +4,13 @@ from streamlit_echarts import st_echarts
 from streamlit_extras.grid import grid 
 from annotated_text import annotated_text
 import leafmap.foliumap as leafmap
-from utils_ctg import *
+
 from markdownlit import mdlit
 import pandas as pd
 import numpy as np
+
+from utils_ctg import *
+from utils_llm import *
 
 # from matplotlib.backends.backend_agg import RendererAgg
 # _lock = RendererAgg.lock
@@ -21,8 +24,8 @@ st.set_page_config(page_title=apptitle, page_icon=":eyeglasses:")
 ## -- set some cache functions 
 
 ## -- set some states 
-if "next_trial_clicked" not in st.session_state:
-    st.session_state.next_trial_clicked = False
+if "demo_search_clicked" not in st.session_state:
+    st.session_state.demo_search_clicked = False
 if 'form_submit_clicked' not in st.session_state:
     st.session_state.form_submit_clicked = False
 if 'df_ct' not in st.session_state:
@@ -31,6 +34,10 @@ if 'trial_index' not in st.session_state:
     st.session_state.trial_index = 0 
 if 'search_params' not in st.session_state:
     st.session_state.search_params = []
+if "next_trial_clicked" not in st.session_state:
+    st.session_state.next_trial_clicked = False
+if "prev_trial_clicked" not in st.session_state:
+    st.session_state.prev_trial_clicked = False
 
 ## some css modifications 
 st.markdown("""
@@ -43,10 +50,14 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # button callbacks 
-def callback_nexttrial():
-    st.session_state.next_trial_clicked = True
 def callback_formsubmit():
     st.session_state.form_submit_clicked = True
+def callback_demosearch():
+    st.session_state.demo_search_clicked = True
+def callback_prevtrial():
+    st.session_state.prev_trial_clicked = True
+def callback_nexttrial():
+    st.session_state.next_trial_clicked = True
 
 def main():
 
@@ -79,6 +90,11 @@ def main():
         help='Filter results by the trial status. Default to presenting only recruiting trials, whether it is by invite or open to public.', 
         key='multiselect_status'
     )
+    # demoSearch = sb.button(label="demo search", on_click=callback_demosearch)
+    # if demoSearch or st.session_state.demo_search_clicked:
+    #     input_condition, input_intr, input_loc, multiselect_status = 'Breast Cancer', 'Drug', 'California', ['RECRUITING', 'ENROLLING_BY_INVITATION']
+    #     # if know this would work: st.session_state['text'] = autofill_value
+    #     # st.session_state.demo_search_clicked = False
 
     form_submit = ctg_search_form.form_submit_button(label="Submit", on_click=callback_formsubmit)
     sb.divider()
@@ -110,7 +126,7 @@ def main():
         df = st.session_state.df_ct
     # <------------- main section display: sec 1 analytics --------------> 
         # Graphs
-        st.header('Data Analytics', divider='rainbow')
+        st.header('Data Summary', divider='rainbow')
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             data_st = df['Study Type'].value_counts().to_dict()
@@ -140,41 +156,60 @@ def main():
 
     if not st.session_state.df_ct.empty: 
         # <------------- main section display: sec 2 available data + explore in flashcard type view --------------> 
-        st.header('Trials', divider='rainbow')
+        st.header('Filter Result Clinical Trials', divider='rainbow')
         st.dataframe(data=df)
+
+
+        st.header('Explore Filtered Trials', divider='rainbow')
         df = st.session_state.df_ct
-        with st.expander('Find Trial Details', expanded=True): 
-            next_trial = st.button(
-            "Next trial", on_click=callback_nexttrial, key="next_trial", use_container_width=True) 
-            if next_trial or st.session_state.next_trial_clicked:
-                st.session_state.trial_index += 1
-                st.session_state.next_trial_clicked = False
-            
-            cur_row = df.loc[st.session_state.trial_index]
-            print(st.session_state.trial_index)
-            st.markdown(
-                f'<h2><span style="color:black"> \
-                    {cur_row.briefTitle}</span></h2> ', 
-                # <h4>&mdash; Trial index no. {st.session_state.trial_index}</em></h4></div></div>'
-                unsafe_allow_html=True,
-            )
-            # print(cur_row['Interventions'], )
-            annotated_text((str(st.session_state.trial_index), "form index", "#CEE6F2"), '   ',
-                            (cur_row['NCT ID'], "NCT ID", "#CEE6F2"), '  \n',
-                            [(intervent, "Interventions", "#6AB187") for intervent in cur_row['Interventions'].split(', ')], '  \n',
-                        #    (cur_row['Interventions'], "Interventions", "#6AB187"), '  \n',
-                        [(cond, "condition", "#FFBB00") for cond in cur_row['Conditions'].split(', ')], '  \n')
-            mdlit('#### Brief Summary')
-            mdlit(cur_row['briefSummary'])
-            mdlit('#### Eligibility Criteria')
-            mdlit(cur_row['Eligibility Criteria'])
-
+        prev_trial = st.button("Previous trial", on_click=callback_prevtrial, key="prev_trial", use_container_width=True) 
+        if prev_trial or st.session_state.prev_trial_clicked:
+            st.session_state.trial_index -= 1
+            st.session_state.prev_trial_clicked = False
+        next_trial = st.button("Next trial", on_click=callback_nexttrial, key="next_trial", use_container_width=True) 
+        if next_trial or st.session_state.next_trial_clicked:
+            st.session_state.trial_index += 1
+            st.session_state.next_trial_clicked = False
         
-            # mdlit(cur_row[''])
-            # print([cond for cond in cur_row['Conditions'].split(', ')])
+        cur_row = df.loc[st.session_state.trial_index]
 
-                # print('st.session_state.df_ct.empty', st.session_state.df_ct.empty)
+        # TODO: check if the index is valid - 0 to max leng
+
+        print(st.session_state.trial_index)
+        st.markdown(
+            f'<h3><span style="color:black"> {cur_row.briefTitle}</span></h3>',
+            unsafe_allow_html=True,
+        )
+        annotated_text((str(st.session_state.trial_index), "form index", "#CEE6F2"), '   ',
+                        (cur_row['NCT ID'], "NCT ID", "#CEE6F2"), '  \n',
+                        [(intervent, "Interventions", "#6AB187") for intervent in cur_row['Interventions'].split(', ')], '  \n',
+                    [(cond, "condition", "#FFBB00") for cond in cur_row['Conditions'].split(', ')], '  \n')
+        
+        with st.expander('View Trial Details', expanded=True): 
+            mdlit('#### Brief Summary')
+            # mdlit(cur_row['briefSummary'])
+            mdlit(summarizer(cur_row['briefSummary'], type='briefSummary'))
             
+            mdlit('#### Eligibility Criteria')
+            # mdlit(cur_row['Eligibility Criteria'])
+            mdlit(summarizer(cur_row['Eligibility Criteria'], type='eligCriteria'))
+
+            mdlit('#### Contacts')
+            contacts = [cont for cont in cur_row['Contacts'].split(', ')]
+            if len(contacts)<1: 
+                mdlit("Inadequate contact information. Please refer to original record of the trial. ")
+            else:
+                for contact in contacts: 
+                    contact_info = contact.split(' - ')
+                    if len(contact_info)<5:
+                        mdlit("Inadequate contact information. Please refer to original record of the trial. ")
+                        break
+                    else:
+                        mdlit('* Name: '+contact_info[0] + "  \n" 
+                            +'* Phone Number: '+contact_info[2]  + "  \n" + '* Email: '+contact_info[4] + "  \n" ) #+'* Role: '+contact_info[1] + "  \n" 
+                        # TODO: send email logic 
+            st.link_button("View Complete Trial Record", f"https://clinicaltrials.gov/study/{cur_row['NCT ID']}")
 
 
-main()
+if __name__=="__main__": 
+    main() 

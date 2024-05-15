@@ -10,15 +10,19 @@ def get_ctg_records(cond, intr, locn, status):
         "query.intr": intr,
         'query.locn': locn, 
         'filter.overallStatus':  '|'.join(status) ,
-        "pageSize": 100
+        "pageSize": 100, 
     }
 
     # Initialize an empty list to store the data
     data_list = []
 
     # Loop until there is no nextPageToken
-    while True:
+    # while True:
+    # max 1000 entries 
+    n_page = 0
+    while n_page<10 and True:
         # Print the current URL (for debugging purposes)
+        n_page += 1
         print("Fetching data from:", base_url + '?' + '&'.join([f"{k}={v}" for k, v in params.items()]))
         
         # Send a GET request to the API
@@ -40,6 +44,7 @@ def get_ctg_records(cond, intr, locn, status):
                 startDate = study['protocolSection']['statusModule'].get('startDateStruct', {}).get('date', 'Unknown Date')
                 conditions = ', '.join(study['protocolSection']['conditionsModule'].get('conditions', ['No conditions listed']))
                 acronym = study['protocolSection']['identificationModule'].get('acronym', 'Unknown')
+                # nctId = study['protocolSection']['identificationModule'].get('nctId', 'Unknown')
 
                 # Extract interventions safely
                 interventions_list = study['protocolSection'].get('armsInterventionsModule', {}).get('interventions', [])
@@ -52,7 +57,7 @@ def get_ctg_records(cond, intr, locn, status):
                 
                 # Extract contact info 
                 centralContact = study['protocolSection'].get('contactsLocationsModule', {}).get('centralContacts', [])
-                contacts = ', '.join([f"{contact.get('name', 'No Name')} -  {contact.get('role', 'No Role')} - {contact.get('phone', 'No Phone')} - {contact.get('phoneExt', 'No phoneExt')} - {contact.get('email', 'No email')}" for contact in centralContact]) if centralContact else "No contact listed"
+                contacts = ', '.join([f"{contact.get('name', 'No Name')} -  {contact.get('role', 'No Role')} - {contact.get('phone', 'No Phone')} - {contact.get('phoneExt', 'No Phone Ext')} - {contact.get('email', 'No email')}" for contact in centralContact]) if centralContact else "No contact listed"
 
                 # Extract dates and phases
                 primaryCompletionDate = study['protocolSection']['statusModule'].get('primaryCompletionDateStruct', {}).get('date', 'Unknown Date')
