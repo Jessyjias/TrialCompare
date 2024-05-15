@@ -14,9 +14,10 @@ import time
 from utils_ctg import *
 from utils_llm import *
 
-def show_trial_detail(cur_row): 
+def show_trial_detail(cur_row, expanded=True): 
+    summarizer_sum, summarizer_elig = cur_row['briefSummary'], cur_row['Eligibility Criteria']
     st.markdown(
-        f'<h3><span style="color:black"> {cur_row.briefTitle}</span></h3>',
+        f'<h3><span> {cur_row.briefTitle}</span></h3>',
         unsafe_allow_html=True,
     )
     annotated_text((str(st.session_state.trial_index), "form index", "#CEE6F2"), '   ',
@@ -24,14 +25,14 @@ def show_trial_detail(cur_row):
                     [(intervent, "Interventions", "#6AB187") for intervent in cur_row['Interventions'].split(', ')], '  \n',
                 [(cond, "condition", "#FFBB00") for cond in cur_row['Conditions'].split(', ')], '  \n')
     
-    with st.expander('View Trial Details', expanded=True): 
+    with st.expander('View Trial Details', expanded=expanded): 
         mdlit('#### Brief Summary')
-        # mdlit(cur_row['briefSummary'])
-        # mdlit(summarizer(openai_api_key, cur_row['briefSummary'], type='briefSummary'))
+        summarizer_sum = summarizer(openai_api_key, cur_row['briefSummary'], type='briefSummary')
+        mdlit(summarizer_sum)
         
         mdlit('#### Eligibility Criteria')
-        # mdlit(cur_row['Eligibility Criteria'])
-        # mdlit(summarizer(openai_api_key, cur_row['Eligibility Criteria'], type='eligCriteria'))
+        summarizer_elig = summarizer(openai_api_key, cur_row['Eligibility Criteria'], type='eligCriteria')
+        mdlit(summarizer(openai_api_key, cur_row['Eligibility Criteria'], type='eligCriteria'))
 
         mdlit('#### Contacts')
         contacts = [cont for cont in cur_row['Contacts'].split(', ')]
@@ -48,6 +49,7 @@ def show_trial_detail(cur_row):
                         +'* Phone Number: '+contact_info[2]  + "  \n" + '* Email: '+contact_info[4] + "  \n" ) #+'* Role: '+contact_info[1] + "  \n" 
                     # TODO: send email logic 
         st.link_button("View Complete Trial Record", f"https://clinicaltrials.gov/study/{cur_row['NCT ID']}")
+    return summarizer_sum, summarizer_elig
 
 # from matplotlib.backends.backend_agg import RendererAgg
 # _lock = RendererAgg.lock
@@ -189,7 +191,7 @@ def main():
         with col1:
             data_st = df['Study Type'].value_counts().to_dict()
             st.markdown(
-                f'<h3><span style="color:black"> Study Type </span></h3>',
+                f'<h3><span style=""> Study Type </span></h3>',
                 unsafe_allow_html=True,
             )
             st_echarts(options=get_pie_graph_options('Study Types', data=data_st), height="400px")
@@ -200,13 +202,13 @@ def main():
             df_p = df_p[~df_p['Phases'].isin(non_phases_terms)]
             df_p = pd.Series(df_p.counts.values,index=df_p.Phases).to_dict()
             st.markdown(
-                f'<h3><span style="color:black"> Study Phase </span></h3>',
+                f'<h3><span style=""> Study Phase </span></h3>',
                 unsafe_allow_html=True,
             )
             st_echarts(options=get_pie_graph_options('Study Phases', data=df_p), height="400px")
         with col3:
             st.markdown(
-                f'<h3><span style="color:black"> Recruiting Sex </span></h3>',
+                f'<h3><span style=""> Recruiting Sex </span></h3>',
                 unsafe_allow_html=True,
             )
             df_s = df['Sex'].dropna().value_counts().to_dict()
@@ -216,7 +218,7 @@ def main():
         df_locs_map = get_locations_df(df)
         # with st.expander('map'):
         st.markdown(
-                f'<h3><span style="color:black"> Trial Locations </span></h3>',
+                f'<h3><span style=""> Trial Locations </span></h3>',
                 unsafe_allow_html=True,
             )
         st.map(df_locs_map,
@@ -278,33 +280,44 @@ def main():
             cur_row = df.loc[st.session_state.trial_index]
             print(st.session_state.trial_index)
             # 
-            show_trial_detail(cur_row)
+            _,_ = show_trial_detail(cur_row, expanded=True)
         
         with tab2:
             nctid_form = st.form('NCT IDs')
-            nctid_1 = nctid_form.text_input('Enter 1st NCT ID: ')
-            nctid_2 = nctid_form.text_input('Enter 2nd NCT ID: ')
+            col1_id1, col_2_id2 = st.columns(2) 
+            with col1_id1:
+                nctid_1 = nctid_form.text_input('Enter 1st NCT ID: ')
+            with col_2_id2:
+                nctid_2 = nctid_form.text_input('Enter 2nd NCT ID: ')
 
             nctid_form_submit = nctid_form.form_submit_button(label="Search Trial(s)", on_click=callback_nctformsubmit)
 
             if nctid_form_submit or st.session_state.nctformsubmit_clicked: 
                 df_ncts = get_ctg_by_ids([nctid_1, nctid_2])
                 df_ncts = df_ncts[df_ncts['NCT ID'].isin([nctid_1, nctid_2])].drop_duplicates().reset_index()
-                st.info('Displaying either unique trial result or two distinct trial.  ')
+                st.info(f'Total Valid, Unique Trial IDs: {len(df_ncts)}  \n \
+                        Displaying either unique trial data or comparing two distinct trials.')
                         # \n If you expect 2 distinct trial results, please check if they are unique.')
-                st.dataframe(df_ncts)
-                print(len(df_ncts))
+                # st.dataframe(df_ncts)
+                # print(len(df_ncts))
                 if len(df_ncts)==2: 
                     col1, col2 = st.columns(2)
                     with col1: 
-                        show_trial_detail(df_ncts.loc[0])
+                        sum_bs_1, sum_elig_1 = show_trial_detail(df_ncts.loc[0], expanded=False)
                     with col2: 
-                        show_trial_detail(df_ncts.loc[1])
+                        sum_bs_2, sum_elig_2 = show_trial_detail(df_ncts.loc[1], expanded=False)
                     ## compare the eligibility criteria 
+                    briefsum_compare = comparer('briefSummary', [sum_bs_1, sum_bs_2])
+                    mdlit('#### Compare Study Summaries')
+                    mdlit(briefsum_compare)
+                    elig_compare = comparer('eligCriteria', [sum_elig_1, sum_elig_2])
+                    mdlit('#### Compare Study Summaries')
+                    mdlit(elig_compare)
+
                 else: 
                     for row_ind in range(0, len(df_ncts)): 
                         cur_row = df_ncts.loc[row_ind]
-                        show_trial_detail(cur_row)
+                        _,_ = show_trial_detail(cur_row, expanded=True)
                 st.session_state.nctformsubmit_clicked = False ## reset back of false to prevent other actions inferences 
             
             ## 
@@ -324,10 +337,12 @@ if __name__=="__main__":
             msg = st.success('Proceed to playing with the app!', icon='👉')
     st.title("SimpleTrials")
     st.markdown(
-        f'<h4><span style="color:black"> Start your search or try demo from the sidebar 👈  </span></h4>',
+        f'<p><span style=""> Discover clinical trials with SimpleTrials—where clarity meets opportunity in your search for the right trial.  </span></p>',
         unsafe_allow_html=True,
     )
-    # time.sleep(1.5)
-    # msg.empty()
+    st.markdown(
+        f'<p><span style=""> 👈 Start Search or Try Demo from the Sidebar 👈  </span></p>',
+        unsafe_allow_html=True,
+    )
 
     main() 
