@@ -64,6 +64,16 @@ def main():
     # <------------- side bar --------------> 
     sb = st.sidebar
 
+    if 'OPENAI_API_KEY' in st.secrets:
+        st.success('API key already provided!', icon='✅')
+        openai_api_key = st.secrets['OPENAI_API_KEY']
+    else:
+        openai_api_key = st.text_input('Enter OpenAI API token:', type='password')
+        if not (openai_api_key.startswith('sk-') and len(openai_api_key)==51):
+            st.warning('Please enter your credentials!', icon='⚠️')
+        else:
+            st.success('Proceed to playing with the app!', icon='👉')
+
     sb.title('Get Trial Records Settings')
     sb_expander = sb.expander("Search Parameters", expanded=True)
     ctg_search_form = sb_expander.form("search_trials_form")
@@ -188,11 +198,11 @@ def main():
         with st.expander('View Trial Details', expanded=True): 
             mdlit('#### Brief Summary')
             # mdlit(cur_row['briefSummary'])
-            mdlit(summarizer(cur_row['briefSummary'], type='briefSummary'))
+            mdlit(summarizer(openai_api_key, cur_row['briefSummary'], type='briefSummary'))
             
             mdlit('#### Eligibility Criteria')
             # mdlit(cur_row['Eligibility Criteria'])
-            mdlit(summarizer(cur_row['Eligibility Criteria'], type='eligCriteria'))
+            mdlit(summarizer(openai_api_key, cur_row['Eligibility Criteria'], type='eligCriteria'))
 
             mdlit('#### Contacts')
             contacts = [cont for cont in cur_row['Contacts'].split(', ')]

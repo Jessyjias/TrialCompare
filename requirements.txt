@@ -192,8 +192,8 @@ pydeck==0.9.1
 pyecharts==2.0.5
 Pygments==2.18.0
 pymdown-extensions==10.8.1
-pyobjc-core==10.2
-pyobjc-framework-Cocoa==10.2
+# pyobjc-core==10.2
+# pyobjc-framework-Cocoa==10.2
 pyparsing==3.1.2
 PyPika==0.48.9
 pyproject_hooks==1.1.0

@@ -34,8 +34,8 @@ ELIG_SUMMARIZER_SYS_PROMPT = "You are a clinical trial assistant who is explaini
 #     return client
 
 @st.cache_data
-def summarizer(summary, type='briefSummary'):
-    openai.api_key = os.environ['OPENAI_API_KEY'] 
+def summarizer(key, summary, type='briefSummary'):
+    openai.api_key = key
     client = OpenAI()
     choose_prompt = { 
         'briefSummary': DESC_SUMMARIZER_SYS_PROMPT, 
