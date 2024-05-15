@@ -181,6 +181,8 @@ def main():
         # mdlit(f'Displaying search result for:  \n Condition: {input_condition}  \n \
         #       Intervention: {input_intr}  \n Location: {input_loc}  \n Status Filters: {multiselect_status}')
         st.header('Data Summary', divider='rainbow')
+        st.info(f'Successfully retrieved: {len(df)} trial records.  \n \
+                Results with longer than 1000 entries are limited to the first 1000 due to computation considerations.')
         annotated_text('Displaying search result for:  \n',
                 (input_condition, "condition", "#FFBB00"), '   ',
                 (input_intr, "Interventions", "#6AB187"), '   ',
