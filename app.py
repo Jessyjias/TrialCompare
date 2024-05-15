@@ -148,11 +148,9 @@ def main():
 
 
     sb.divider()
-    saved_trials = sb.title('Saved trial IDs')
-    sb.subheader('Copy and paste for later') 
-                        # on_click=get_ctg_records, 
-                        # args=(input_condition, input_intr, input_loc, multiselect_status), 
-                        # kwargs=None,use_container_width=False)
+    ## TODO: shortlisted trial show on sidebar? 
+    # saved_trials = sb.title('Saved trial IDs')
+    # sb.subheader('Copy and paste for later') 
     if st.session_state.search_params == []:
         st.session_state.search_params = [input_condition, input_intr, input_loc, multiselect_status]
     
@@ -324,6 +322,11 @@ if __name__=="__main__":
             msg = st.warning('Please enter your credentials!', icon='⚠️')
         else:
             msg = st.success('Proceed to playing with the app!', icon='👉')
+    st.title("SimpleTrials")
+    st.markdown(
+        f'<h4><span style="color:black"> Start your search or try demo from the sidebar 👈  </span></h4>',
+        unsafe_allow_html=True,
+    )
     # time.sleep(1.5)
     # msg.empty()
 
