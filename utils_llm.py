@@ -80,7 +80,7 @@ def summarizer(key, summary, type='briefSummary'):
 
 
 @st.cache_data
-def comparer(key, sum_list, type='briefSummary'):
+def comparator(key, sum_list, type='briefSummary'):
     openai.api_key = key
     client = OpenAI()
     choose_prompt = { 

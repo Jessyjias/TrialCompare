@@ -309,10 +309,10 @@ def main():
                     with col2: 
                         sum_bs_2, sum_elig_2 = show_trial_detail(df_ncts.loc[1], expanded=False)
                     ## compare the eligibility criteria 
-                    briefsum_compare = comparer('briefSummary', [sum_bs_1, sum_bs_2])
+                    briefsum_compare = comparator('briefSummary', [sum_bs_1, sum_bs_2])
                     mdlit('#### Compare Study Summaries')
                     mdlit(briefsum_compare)
-                    elig_compare = comparer('eligCriteria', [sum_elig_1, sum_elig_2])
+                    elig_compare = comparator('eligCriteria', [sum_elig_1, sum_elig_2])
                     mdlit('#### Compare Study Summaries')
                     mdlit(elig_compare)
 
