@@ -313,7 +313,7 @@ def main():
                     mdlit('#### Compare Study Summaries')
                     mdlit(briefsum_compare)
                     elig_compare = comparator('eligCriteria', [sum_elig_1, sum_elig_2])
-                    mdlit('#### Compare Study Summaries')
+                    mdlit('#### Compare Study Eligibility Criteria')
                     mdlit(elig_compare)
 
                 else: 
