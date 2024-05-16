@@ -5,6 +5,7 @@ from streamlit_extras.grid import grid
 from annotated_text import annotated_text
 import leafmap.foliumap as leafmap
 from streamlit_extras.dataframe_explorer import dataframe_explorer 
+from streamlit_extras.buy_me_a_coffee import button
 
 from markdownlit import mdlit
 import pandas as pd
@@ -148,8 +149,8 @@ def main():
     
     form_submit = ctg_search_form.form_submit_button(label="Submit", on_click=callback_formsubmit)
 
-
-    sb.divider()
+    with sb:
+        button(username="jessyjiaso6", floating=False, width=221)
     ## TODO: shortlisted trial show on sidebar? 
     # saved_trials = sb.title('Saved trial IDs')
     # sb.subheader('Copy and paste for later') 
