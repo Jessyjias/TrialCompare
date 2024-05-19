@@ -29,11 +29,11 @@ def show_trial_detail(cur_row, expanded=True):
     with st.expander('View Trial Details', expanded=expanded): 
         st.info('Trial information is summarized by AI to help you understand.   \nFor more precise information or question regarding the trial, please visit original trial record or **[Contact trial manager](#contacts)** directly.')
         mdlit('#### Brief Summary')
-        # summarizer_sum = summarizer(openai_api_key, cur_row['briefSummary'], type='briefSummary')
+        summarizer_sum = summarizer(openai_api_key, cur_row['briefSummary'], type='briefSummary')
         mdlit(summarizer_sum)
         
         mdlit('#### Eligibility Criteria')
-        # summarizer_elig = summarizer(openai_api_key, cur_row['Eligibility Criteria'], type='eligCriteria')
+        summarizer_elig = summarizer(openai_api_key, cur_row['Eligibility Criteria'], type='eligCriteria')
         mdlit(summarizer_elig)
 
         mdlit('#### Contacts')
@@ -322,12 +322,12 @@ def main():
                         sum_bs_2, sum_elig_2 = show_trial_detail(df_ncts.loc[1], expanded=False)
                     ## compare the eligibility criteria 
                     # st.info('Trial comparison information is summarized by AI to help you understand.   \nFor more precise information or question regarding the trials, please view their trial details above and contact trial manager for each trial directly.')
-                    # briefsum_compare = comparator('briefSummary', [sum_bs_1, sum_bs_2])
+                    briefsum_compare = comparator('briefSummary', [sum_bs_1, sum_bs_2])
                     mdlit('#### Compare Study Summaries')
-                    # mdlit(briefsum_compare)
-                    # elig_compare = comparator('eligCriteria', [sum_elig_1, sum_elig_2])
+                    mdlit(briefsum_compare)
+                    elig_compare = comparator('eligCriteria', [sum_elig_1, sum_elig_2])
                     mdlit('#### Compare Study Eligibility Criteria')
-                    # mdlit(elig_compare)
+                    mdlit(elig_compare)
 
                 else: 
                     for row_ind in range(0, len(df_ncts)): 
