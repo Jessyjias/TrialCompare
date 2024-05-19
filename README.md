@@ -1,6 +1,7 @@
-# TrialCompare
+# SimpleTrials (TrialCompare)
 
 Try the app here: https://simpletrials.streamlit.app/
+
 View demo video here: https://youtu.be/E0vAKmYf1jg
  
 ## Inspiration
