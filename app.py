@@ -353,11 +353,8 @@ if __name__=="__main__":
             msg = st.success('Proceed to playing with the app!', icon='👉')
     st.title("SimpleTrials")
     st.markdown(
-        f'<p><span style=""> Discover clinical trials with SimpleTrials—where clarity meets opportunity in your search for the right trial.  </span></p>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f'<p><span style=""> 👈 Start Search or Try Demo from the Sidebar 👈  </span></p>',
+        '<p>Discover clinical trials with SimpleTrials—where clarity meets opportunity in your search for the right trial.  <a href="https://youtu.be/E0vAKmYf1jg">Watch demo video</a> </p>' +
+        '<p><span style=""> 👈 Start Search or Try Demo from the Sidebar 👈  </span></p>', 
         unsafe_allow_html=True,
     )
 
