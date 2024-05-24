@@ -116,15 +116,18 @@ def get_ctg_records(cond, intr, locn, status):
     if len(data_list)>0: 
         df = pd.DataFrame(data_list)
     else: 
-        df = pd.read_csv("./data/prev_search_results.csv")
+        df = pd.DataFrame()
+        return df 
         ## process age to integers 
-    
-    df['Min Age'].dropna(inplace=True)
-    df['Max Age'].dropna(inplace=True)
-    df['Min Age'].replace('Unknown', '0 years', inplace=True)
-    df['Max Age'][(df['Max Age'] == 'Unknown')] = df['Min Age']
-    df['Min Age'] = df['Min Age'].apply(lambda x: [int(i) for i in x.split() if i.isdigit()][0])
-    df['Max Age'] = df['Max Age'].apply(lambda x: [int(i) for i in x.split() if i.isdigit()][0])
+    try:
+        df['Min Age'].dropna(inplace=True)
+        df['Max Age'].dropna(inplace=True)
+        df['Min Age'].replace('Unknown', '0 years', inplace=True)
+        df['Max Age'][(df['Max Age'] == 'Unknown')] = df['Min Age']
+        df['Min Age'] = df['Min Age'].apply(lambda x: [int(i) for i in x.split() if i.isdigit()][0])
+        df['Max Age'] = df['Max Age'].apply(lambda x: [int(i) for i in x.split() if i.isdigit()][0])
+    except: 
+        print('age not processed. ') 
 
     df.to_csv('./data/prev_search_results.csv')
 

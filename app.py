@@ -169,6 +169,8 @@ def main():
             with st.spinner("Pulling data... (if it takes too long, try to put in more details in search parameters to narrow the search. )"):
                 df_res = get_ctg_records(input_condition, input_intr, input_loc, multiselect_status)
                 st.session_state.df_ct = df_res
+                if st.session_state.df_ct.empty: 
+                    st.warning('❗No Search results. Try setting more general search parameters.')
             
             st.session_state.trial_index = 0
             st.session_state.search_params = [input_condition, input_intr, input_loc, multiselect_status]
@@ -245,7 +247,7 @@ def main():
                 'Conditions', 'Interventions', 'Locations', 'Contacts', 
                 'Phases', 'Eligibility Criteria', 'Sex', 'Min Age', 'Max Age']]
         df_display = df_display.reindex(columns = ['favourite']+df_display.columns.tolist() )
-        df_display['favourite'] = [False]*len(df_display)
+        df_display['favourite'] = [False]*len(df_display) 
 
         filtered_df = dataframe_explorer(df_display, case=False)
         # st.dataframe(filtered_df, use_container_width=True)
@@ -337,6 +339,7 @@ def main():
             
             ## 
         st.warning('❗Summaries and comparisons are designed for helping general public to understand and may not be precise enough.  Please always **contact the trial manager** if you wish to learn more about your eligibility or if you wish to enroll! ')
+
 
 
 
