@@ -362,7 +362,9 @@ if __name__=="__main__":
         '<p><span style=""> 👈 Start Search or Try Demo from the Sidebar 👈  </span></p>', 
         unsafe_allow_html=True,
     )
-
-    with streamlit_analytics.track(firestore_key_file="firestore-key.json", firestore_collection_name="traffic-counts"):
-        main() 
+    try:
+        with streamlit_analytics.track(firestore_key_file="firestore-key.json", firestore_collection_name="traffic-counts"):
+            main() 
+    except: 
+        main()
     # streamlit_analytics.stop_tracking(firestore_key_file="firestore-key.json", firestore_collection_name="traffic-counts")

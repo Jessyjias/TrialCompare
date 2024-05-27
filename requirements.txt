@@ -293,3 +293,4 @@ xxhash==3.4.1
 xyzservices==2024.4.0
 yarl==1.9.4
 zipp==3.17.0
+streamlit_analytics2
