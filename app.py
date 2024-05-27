@@ -6,6 +6,10 @@ from annotated_text import annotated_text
 import leafmap.foliumap as leafmap
 from streamlit_extras.dataframe_explorer import dataframe_explorer 
 from streamlit_extras.buy_me_a_coffee import button
+import streamlit_analytics2 as streamlit_analytics
+
+import warnings
+warnings.filterwarnings("ignore")
 
 from markdownlit import mdlit
 import pandas as pd
@@ -342,8 +346,6 @@ def main():
 
 
 
-
-
 if __name__=="__main__": 
     if 'OPENAI_API_KEY' in st.secrets:
         # msg = st.success('App and API Rendered Successfully! Use Sidebar to initiate search. ', icon='✅')
@@ -361,4 +363,6 @@ if __name__=="__main__":
         unsafe_allow_html=True,
     )
 
-    main() 
+    with streamlit_analytics.track(firestore_key_file="firestore-key.json", firestore_collection_name="traffic-counts"):
+        main() 
+    # streamlit_analytics.stop_tracking(firestore_key_file="firestore-key.json", firestore_collection_name="traffic-counts")
