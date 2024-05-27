@@ -7,6 +7,7 @@ import leafmap.foliumap as leafmap
 from streamlit_extras.dataframe_explorer import dataframe_explorer 
 from streamlit_extras.buy_me_a_coffee import button
 import streamlit_analytics2 as streamlit_analytics
+import json
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -363,7 +364,8 @@ if __name__=="__main__":
         unsafe_allow_html=True,
     )
     try:
-        with streamlit_analytics.track(firestore_key_file="firestore-key.json", firestore_collection_name="traffic-counts"):
+        key_dict = json.loads(st.secrets["textkey"])
+        with streamlit_analytics.track(streamlit_secrets_firestore_key=key_dict, firestore_collection_name="traffic-counts"):
             main() 
     except: 
         main()
