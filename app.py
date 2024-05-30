@@ -266,7 +266,9 @@ def main():
                     default=False,
                 )
             },
-            # disabled=["widgets"],
+                disabled=['NCT ID', 'Acronym', 'Study Type', 'briefTitle', 'Overall Status', 'Start Date', 
+                'Conditions', 'Interventions', 'Locations', 'Contacts', 
+                'Phases', 'Eligibility Criteria', 'Sex', 'Min Age', 'Max Age']
             # hide_index=True,
         )
         ## TODO: allow edited_df to be used for downstream exploration
