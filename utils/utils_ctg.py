@@ -141,7 +141,6 @@ def get_ctg_by_ids(ids):
     data_list = []
     for id in ids: 
         params = {
-            # 'filter.ids': '|'.join(ids)
             'filter.ids': id, 
             "pageSize": 1, 
         }
@@ -236,8 +235,6 @@ def get_ctg_by_ids(ids):
                     break  # Exit the loop if no nextPageToken is present
             else:
                 print("Failed to fetch data. Status code:", response.status_code, response.text)
-
-                ### TODO: return a default dataframe? DONE 
                 break
     
 

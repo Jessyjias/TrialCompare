@@ -58,16 +58,53 @@ def show_trial_detail(cur_row, expanded=True):
         st.link_button("View Original Trial Record", f"https://clinicaltrials.gov/study/{cur_row['NCT ID']}")
     return summarizer_sum, summarizer_elig
 
-# from matplotlib.backends.backend_agg import RendererAgg
-# _lock = RendererAgg.lock
 
+def display_analysis(df): 
+    # Graphs
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        data_st = df['Study Type'].value_counts().to_dict()
+        st.markdown(
+            f'<h3>Study Type</h3>',
+            unsafe_allow_html=True,
+        )
+        st_echarts(options=get_pie_graph_options('Study Types', data=data_st), height="400px")
+    with col2:
+        df_p = df['Phases'].value_counts().reset_index(name='counts')
+        non_phases_terms = [term for term in df_p['Phases'].values if 'phase' not in term.lower()]
+        df_p.loc[len(df_p.index)] = ['N/A', df_p[df_p['Phases'].isin(non_phases_terms)].counts.sum()] 
+        df_p = df_p[~df_p['Phases'].isin(non_phases_terms)]
+        df_p = pd.Series(df_p.counts.values,index=df_p.Phases).to_dict()
+        st.markdown(
+            f'<h3>Study Phase</h3>',
+            unsafe_allow_html=True,
+        )
+        st_echarts(options=get_pie_graph_options('Study Phases', data=df_p), height="400px")
+    with col3:
+        st.markdown(
+            f'<h3>Recruiting Sex</h3>',
+            unsafe_allow_html=True,
+        )
+        df_s = df['Sex'].dropna().value_counts().to_dict()
+        st_echarts(options=get_pie_graph_options('Sex', data=df_s), height="400px")
+
+    # Map 
+    df_locs_map = get_locations_df(df)
+    # with st.expander('map'):
+    st.markdown(
+            f'<h3>Trial Locations</h3>',
+            unsafe_allow_html=True,
+            help='A trial may be available at multiple sites. This map shows all site locations for the result trials.'
+        )
+    st.map(df_locs_map,
+        latitude='lat',
+        longitude='lng',
+        size='counts')
 
 # -- Set page config
 apptitle = 'SimpleTrials'
 
 st.set_page_config(page_title=apptitle, page_icon=":sparkles:")
-
-## -- set some cache functions 
 
 ## -- set some states 
 if "demo_search_clicked" not in st.session_state:
@@ -183,13 +220,10 @@ def main():
         # print(f'{input_condition}, {input_intr}, {input_loc}, {multiselect_status}')
             
 
-    # <------------- display after the dataframe is stored in state --------------> 
+    # <------------- main display after the dataframe is stored in state --------------> 
     if not st.session_state.df_ct.empty: 
         df = st.session_state.df_ct
-    # <------------- main section display: sec 1 analytics --------------> 
-        # Graphs
-        # mdlit(f'Displaying search result for:  \n Condition: {input_condition}  \n \
-        #       Intervention: {input_intr}  \n Location: {input_loc}  \n Status Filters: {multiselect_status}')
+        # <------------- main section display: sec 1 analytics --------------> 
         st.header('Data Summary', divider='rainbow', help="Showing some data graphs related to trial record distributions.")
         st.info(f'🌟 Successfully retrieved: **{len(df)} trial records**.  \n \
                 Results with longer than 1000 entries are limited to the first 1000 due to computation considerations.')
@@ -198,56 +232,16 @@ def main():
                 (input_intr, "Interventions", "#6AB187"), '   ',
                 (input_loc, "Location", "#D2D7D3"), '   \n',
                 [(status, "Status", "#fbf3ea") for status in multiselect_status], '  \n')
-
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
-            data_st = df['Study Type'].value_counts().to_dict()
-            st.markdown(
-                f'<h3>Study Type</h3>',
-                unsafe_allow_html=True,
-            )
-            st_echarts(options=get_pie_graph_options('Study Types', data=data_st), height="400px")
-        with col2:
-            df_p = df['Phases'].value_counts().reset_index(name='counts')
-            non_phases_terms = [term for term in df_p['Phases'].values if 'phase' not in term.lower()]
-            df_p.loc[len(df_p.index)] = ['N/A', df_p[df_p['Phases'].isin(non_phases_terms)].counts.sum()] 
-            df_p = df_p[~df_p['Phases'].isin(non_phases_terms)]
-            df_p = pd.Series(df_p.counts.values,index=df_p.Phases).to_dict()
-            st.markdown(
-                f'<h3>Study Phase</h3>',
-                unsafe_allow_html=True,
-            )
-            st_echarts(options=get_pie_graph_options('Study Phases', data=df_p), height="400px")
-        with col3:
-            st.markdown(
-                f'<h3>Recruiting Sex</h3>',
-                unsafe_allow_html=True,
-            )
-            df_s = df['Sex'].dropna().value_counts().to_dict()
-            st_echarts(options=get_pie_graph_options('Sex', data=df_s), height="400px")
-
-        # Map 
-        df_locs_map = get_locations_df(df)
-        # with st.expander('map'):
-        st.markdown(
-                f'<h3>Trial Locations</h3>',
-                unsafe_allow_html=True,
-                help='A trial may be available at multiple sites. This map shows all site locations for the result trials.'
-            )
-        st.map(df_locs_map,
-            latitude='lat',
-            longitude='lng',
-            size='counts')
+        display_analysis(df)
         
 
     if not st.session_state.df_ct.empty: 
-        # <------------- main section display: sec 2 available data + explore in flashcard type view --------------> 
+        # <------------- main section display: sec 2 view data in dataframe --------------> 
         st.header('Filter and Explore Trials', divider='rainbow', help='Advanced users can interact with the trial data table directly by filtering and searching for keywords in each column. ')
         st.info(
             "🌟 For advanced users: explore trial information by filtering particular keywords or categories and ⭐**shortlist the ones you are interested in**.  \n \
             To learn about the trial and whether you may participate - navigate to **[Learn trial - Explain to me](#learn-trial-explain-to-me)** directly. ", 
         )
-        # st.dataframe(data=df)
         df_display = df[['NCT ID', 'Acronym', 'Study Type', 'briefTitle', 'Overall Status', 'Start Date', 
                 'Conditions', 'Interventions', 'Locations', 'Contacts', 
                 'Phases', 'Eligibility Criteria', 'Sex', 'Min Age', 'Max Age']]
@@ -255,7 +249,6 @@ def main():
         df_display['favourite'] = [False]*len(df_display) 
 
         filtered_df = dataframe_explorer(df_display, case=False)
-        # st.dataframe(filtered_df, use_container_width=True)
 
         edited_df = st.data_editor(
             filtered_df,
@@ -272,10 +265,9 @@ def main():
             # hide_index=True,
         )
         ## TODO: allow edited_df to be used for downstream exploration
-        # st.session_state.df_ct = edited_df.reset_index()
+        # <------------- main section display: sec 3 explore trial data in flashcard type view --------------> 
         st.header('Learn Trial - Explain to me', divider='rainbow', help='AI assisted trial summaries and comparisons. Either explore each search result 1 by 1 or compare 2 specific trials by providing the IDs. ')
         tab1, tab2 = st.tabs(['All - Show me 1 by 1', 'Search and Compare by NCT ID'])
-        # st.header('Explore Trials', divider='rainbow')
         with tab1:
             st.info('🌟 Let AI help you understand the goal of the trial, and its eligibility criteria!   \n \
                     Viewing each trial from search result - use buttons to navigate the results. ')
@@ -320,9 +312,6 @@ def main():
                 df_ncts = df_ncts[df_ncts['NCT ID'].isin([nctid_1, nctid_2])].drop_duplicates().reset_index()
                 st.info(f'Total Valid, Unique Trial IDs: {len(df_ncts)}  \n \
                         Displaying either unique trial data or comparing two distinct trials.')
-                        # \n If you expect 2 distinct trial results, please check if they are unique.')
-                # st.dataframe(df_ncts)
-                # print(len(df_ncts))
                 if len(df_ncts)==2: 
                     col1, col2 = st.columns(2)
                     with col1: 
@@ -330,7 +319,6 @@ def main():
                     with col2: 
                         sum_bs_2, sum_elig_2 = show_trial_detail(df_ncts.loc[1], expanded=False)
                     ## compare the eligibility criteria 
-                    # st.info('Trial comparison information is summarized by AI to help you understand.   \nFor more precise information or question regarding the trials, please view their trial details above and contact trial manager for each trial directly.')
                     briefsum_compare = comparator('briefSummary', [sum_bs_1, sum_bs_2])
                     mdlit('#### Compare Study Summaries')
                     mdlit(briefsum_compare)
@@ -343,8 +331,6 @@ def main():
                         cur_row = df_ncts.loc[row_ind]
                         _,_ = show_trial_detail(cur_row, expanded=True)
                 st.session_state.nctformsubmit_clicked = False ## reset back of false to prevent other actions inferences 
-            
-            ## 
         st.warning('❗Summaries and comparisons are designed for helping general public to understand and may not be precise enough.  Please always **contact the trial manager** if you wish to learn more about your eligibility or if you wish to enroll! ')
 
 
