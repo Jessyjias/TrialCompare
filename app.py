@@ -7,12 +7,13 @@ import leafmap.foliumap as leafmap
 from streamlit_extras.dataframe_explorer import dataframe_explorer 
 from streamlit_extras.buy_me_a_coffee import button
 import streamlit_analytics2 as streamlit_analytics
-import json
+from markdownlit import mdlit
 
+import json
 import warnings
+from typing import *
 warnings.filterwarnings("ignore")
 
-from markdownlit import mdlit
 import pandas as pd
 import numpy as np
 import time
@@ -20,12 +21,23 @@ import time
 from utils.utils_ctg import *
 from utils.utils_llm import *
 
-def show_trial_detail(cur_row, expanded=True): 
-    summarizer_sum, summarizer_elig = cur_row['briefSummary'], cur_row['Eligibility Criteria']
+def show_trial_detail(cur_row: pd.Series, expanded: bool = True) -> Optional[tuple]: 
+    """Get trial detail expander contents. 
+
+    Args:
+        cur_row (pd.Series): A row of study record detail info. 
+        expanded (bool, optional): whether the expander is default to expanded or not. Defaults to True (expanded).
+
+    Returns:
+        Optional[tuple]: summarized description, summarized elig_criteria  
+    """    
+    # summarizer_sum, summarizer_elig = cur_row['briefSummary'], cur_row['Eligibility Criteria']
+    # trial title 
     st.markdown(
         f'<h4><span> {cur_row.briefTitle}</span></h4>',
         unsafe_allow_html=True,
     )
+    # trial basic info, ID/interventions/conditions
     annotated_text((str(st.session_state.trial_index), "form index", "#CEE6F2"), '   ',
                     (cur_row['NCT ID'], "NCT ID", "#CEE6F2"), '  \n',
                     [(intervent, "Interventions", "#6AB187") for intervent in cur_row['Interventions'].split(', ')], '  \n',
@@ -59,7 +71,12 @@ def show_trial_detail(cur_row, expanded=True):
     return summarizer_sum, summarizer_elig
 
 
-def display_analysis(df): 
+def display_analysis(df:pd.DataFrame): 
+    """Display analysis charts. 
+
+    Args:
+        df (pd.DataFrame): Study records retrieved from API. 
+    """    
     # Graphs
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
@@ -147,21 +164,14 @@ def callback_nexttrial():
     st.session_state.next_trial_clicked = True
 
 def main():
-
     # <------------- side bar --------------> 
     sb = st.sidebar
 
     sb.title('Trial Search Settings')
     sb_expander = sb.expander("Search Parameters", expanded=True)
     demoSearch = sb_expander.button(label="Demo Search  :wave:", on_click=callback_demosearch, help='Demo the app by searching with the default parameters in each input box, namely Breast Cancer for condition, Drug for type of intervention, and California as location. ')
-    # demoSearch = sb.button(label="demo parameters", on_click=callback_demosearch)
-    # if demoSearch or st.session_state.demo_search_clicked:
-    #     default_cond, default_intr, default_loc, default_multiselect_status = 'Breast Cancer', 'Drug', 'California', ['RECRUITING', 'ENROLLING_BY_INVITATION']
-    # else: 
-    #     default_cond, default_intr, default_loc, default_multiselect_status = '', '', '', ['RECRUITING', 'ENROLLING_BY_INVITATION']
     default_cond, default_intr, default_loc, default_multiselect_status = 'Breast Cancer', 'Drug', 'California', ['RECRUITING', 'ENROLLING_BY_INVITATION']
     ctg_search_form = sb_expander.form("search_trials_form")
-    
 
     input_condition = ctg_search_form.text_input(
     "Condition/Disease  \n Ex) Breast Cancer, Neck Pain, Rare diseases...",
@@ -185,25 +195,26 @@ def main():
         help='Filter results by the trial status. Default to recruiting trials, whether it is by invite (ENROLLING_BY_INVITATION) or open to public (RECRUITING).', 
         key='multiselect_status', default=default_multiselect_status
     )
+
+    # if demo search clicked
     if demoSearch or st.session_state.demo_search_clicked:
         input_condition, input_intr, input_loc, multiselect_status = ['Breast Cancer', 'Drug', 'California', ['RECRUITING', 'ENROLLING_BY_INVITATION']]
         # st.session_state.search_params = ['Breast Cancer', 'Drug', 'California', ['RECRUITING', 'ENROLLING_BY_INVITATION']]
         st.session_state.demo_search_clicked = False
-    
-    form_submit = ctg_search_form.form_submit_button(label="Submit", on_click=callback_formsubmit)
 
+    form_submit = ctg_search_form.form_submit_button(label="Submit", on_click=callback_formsubmit)
     with sb:
         # add buy me a coffee button 
         button(username="jessyjiaso6", floating=False, width=221)
     ## TODO: shortlisted trial show on sidebar? 
     # saved_trials = sb.title('Saved trial IDs')
     # sb.subheader('Copy and paste for later') 
+
+    # initialize empty search params
     if st.session_state.search_params == []:
         st.session_state.search_params = [input_condition, input_intr, input_loc, multiselect_status]
     
-    # <------------- calling api for getting results: first search or when parameters change --------------> 
-    # print('heree', input_condition, input_intr, input_loc, multiselect_status, st.session_state.form_submit_clicked)
-    
+    # calling api for getting results: first search or when parameters change
     if (form_submit or st.session_state.form_submit_clicked) or (demoSearch or st.session_state.demo_search_clicked):
         if (st.session_state.df_ct.empty) or st.session_state.search_params != [input_condition, input_intr, input_loc, multiselect_status]: 
             sb.divider()
@@ -218,7 +229,6 @@ def main():
             st.session_state.search_params = [input_condition, input_intr, input_loc, multiselect_status]
             st.session_state.form_submit_clicked = False
         # print(f'{input_condition}, {input_intr}, {input_loc}, {multiselect_status}')
-            
 
     # <------------- main display after the dataframe is stored in state --------------> 
     if not st.session_state.df_ct.empty: 
@@ -232,6 +242,7 @@ def main():
                 (input_intr, "Interventions", "#6AB187"), '   ',
                 (input_loc, "Location", "#D2D7D3"), '   \n',
                 [(status, "Status", "#fbf3ea") for status in multiselect_status], '  \n')
+        # display graphs 
         display_analysis(df)
         
 
@@ -264,7 +275,7 @@ def main():
                 'Phases', 'Eligibility Criteria', 'Sex', 'Min Age', 'Max Age']
             # hide_index=True,
         )
-        ## TODO: allow edited_df to be used for downstream exploration
+        ## TODO: allow edited_df to be used for downstream exploration? 
         # <------------- main section display: sec 3 explore trial data in flashcard type view --------------> 
         st.header('Learn Trial - Explain to me', divider='rainbow', help='AI assisted trial summaries and comparisons. Either explore each search result 1 by 1 or compare 2 specific trials by providing the IDs. ')
         tab1, tab2 = st.tabs(['All - Show me 1 by 1', 'Search and Compare by NCT ID'])
@@ -332,8 +343,6 @@ def main():
                         _,_ = show_trial_detail(cur_row, expanded=True)
                 st.session_state.nctformsubmit_clicked = False ## reset back of false to prevent other actions inferences 
         st.warning('❗Summaries and comparisons are designed for helping general public to understand and may not be precise enough.  Please always **contact the trial manager** if you wish to learn more about your eligibility or if you wish to enroll! ')
-
-
 
 if __name__=="__main__": 
     if 'OPENAI_API_KEY' in st.secrets:

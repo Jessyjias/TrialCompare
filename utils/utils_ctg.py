@@ -1,8 +1,101 @@
 import requests
 import pandas as pd
+import re
 
 
-def get_ctg_records(cond, intr, locn, status):
+def process_age_columns(df_ctg:pd.DataFrame) -> pd.DataFrame: 
+    df = df_ctg.copy()
+    df.dropna(subset=['Min Age', 'Max Age'])
+    df['Min Age'] = df['Min Age'].apply(lambda x: re.search(r'\d+', x).group(0) if re.search(r'\d+', x) else 0)
+    df['Max Age'] = df['Max Age'].apply(lambda x: re.search(r'\d+', x).group(0) if re.search(r'\d+', x) else None)
+    df['Max Age'][(df['Max Age'].isna())] = df['Min Age']
+
+    return df
+
+def process_ctg_record(study:dict) -> dict: 
+    """
+    Given a study record output from API call, safely extract the necessary fields and return as a record dictionary. 
+
+    Args:
+        study (dict): study record dict. 
+
+    Returns:
+        record (dict): formatted study record. 
+    """
+
+    # Safely access nested keys
+    nctId = study['protocolSection']['identificationModule'].get('nctId', 'Unknown')
+    briefTitle = study['protocolSection']['identificationModule'].get('briefTitle', 'Unknown')
+    briefSummary = study['protocolSection']['descriptionModule'].get('briefSummary', 'Unknown')
+    overallStatus = study['protocolSection']['statusModule'].get('overallStatus', 'Unknown')
+    startDate = study['protocolSection']['statusModule'].get('startDateStruct', {}).get('date', 'Unknown Date')
+    conditions = ', '.join(study['protocolSection']['conditionsModule'].get('conditions', ['No conditions listed']))
+    acronym = study['protocolSection']['identificationModule'].get('acronym', 'Unknown')
+
+    # Extract interventions safely
+    interventions_list = study['protocolSection'].get('armsInterventionsModule', {}).get('interventions', [])
+    interventions = ', '.join([intervention.get('name', 'No intervention name listed') for intervention in interventions_list]) if interventions_list else "No interventions listed"
+    
+    # Extract locations safely
+    locations_list = study['protocolSection'].get('contactsLocationsModule', {}).get('locations', [])
+    # location_facilities = 
+    locations = ', '.join([f"{location.get('city', 'No City')} / {location.get('state', 'No State')} / {location.get('country', 'No Country')}" for location in locations_list]) if locations_list else "No locations listed"
+    
+    # Extract contact info 
+    centralContact = study['protocolSection'].get('contactsLocationsModule', {}).get('centralContacts', [])
+    contacts = ', '.join([f"{contact.get('name', 'No Name')} -  {contact.get('role', 'No Role')} - {contact.get('phone', 'No Phone')} - {contact.get('phoneExt', 'No Phone Ext')} - {contact.get('email', 'No email')}" for contact in centralContact]) if centralContact else "No contact listed"
+
+    # Extract dates and phases
+    primaryCompletionDate = study['protocolSection']['statusModule'].get('primaryCompletionDateStruct', {}).get('date', 'Unknown Date')
+    studyFirstPostDate = study['protocolSection']['statusModule'].get('studyFirstPostDateStruct', {}).get('date', 'Unknown Date')
+    lastUpdatePostDate = study['protocolSection']['statusModule'].get('lastUpdatePostDateStruct', {}).get('date', 'Unknown Date')
+    studyType = study['protocolSection']['designModule'].get('studyType', 'Unknown')
+    phases = ', '.join(study['protocolSection']['designModule'].get('phases', ['Not Available']))
+
+    # Extract eligibility requirements safely 
+    eligibilityCriteria = study['protocolSection']['eligibilityModule'].get('eligibilityCriteria', {})
+    sex = study['protocolSection']['eligibilityModule'].get('sex', {})
+    minimumAge = study['protocolSection']['eligibilityModule'].get('minimumAge', 'Unknown')
+    maximumAge = study['protocolSection']['eligibilityModule'].get('maximumAge', 'Unknown')
+
+    # Append the data to the list as a dictionary
+    record = {
+        "NCT ID": nctId,
+        "Acronym": acronym,
+        "briefTitle": briefTitle, 
+        "briefSummary": briefSummary, 
+        "Overall Status": overallStatus,
+        "Start Date": startDate,
+        "Conditions": conditions,
+        "Interventions": interventions,
+        "Locations": locations,
+        "Contacts": contacts, 
+        "Primary Completion Date": primaryCompletionDate,
+        "Study First Post Date": studyFirstPostDate,
+        "Last Update Post Date": lastUpdatePostDate,
+        "Study Type": studyType,
+        "Phases": phases,
+        "Eligibility Criteria": eligibilityCriteria,
+        "Sex": sex,
+        "Min Age": minimumAge,
+        "Max Age": maximumAge 
+        }
+
+    return record
+
+
+def get_ctg_records(cond:str, intr:str, locn:str, status:list[str]) -> pd.DataFrame:
+    """Get clinical trial records given condition, intervention type, location and trial status. 
+
+    Args:
+        cond (str): condiiton/disease of interest. 
+        intr (str): type of intervention. Could be drug, medical device or specific names of the intervention (name of drug). 
+        locn (str): location. 
+        status (list[str]): Trial status. Default to ['RECRUITING', 'ENROLLING_BY_INVITATION']. 
+
+    Returns:
+        df (pd.DataFrame): extracted trial info dataframe. 
+    """    
     # Initial URL for the first API call
     base_url = "https://clinicaltrials.gov/api/v2/studies"
     params = {
@@ -35,71 +128,9 @@ def get_ctg_records(cond, intr, locn, status):
 
             # Loop through each study and extract specific information
             for study in studies:
-                # Safely access nested keys
-                nctId = study['protocolSection']['identificationModule'].get('nctId', 'Unknown')
-                briefTitle = study['protocolSection']['identificationModule'].get('briefTitle', 'Unknown')
-                officialTitle = study['protocolSection']['identificationModule'].get('OfficialTitle', 'Unknown')
-                briefSummary = study['protocolSection']['descriptionModule'].get('briefSummary', 'Unknown')
-                overallStatus = study['protocolSection']['statusModule'].get('overallStatus', 'Unknown')
-                startDate = study['protocolSection']['statusModule'].get('startDateStruct', {}).get('date', 'Unknown Date')
-                conditions = ', '.join(study['protocolSection']['conditionsModule'].get('conditions', ['No conditions listed']))
-                acronym = study['protocolSection']['identificationModule'].get('acronym', 'Unknown')
-                # nctId = study['protocolSection']['identificationModule'].get('nctId', 'Unknown')
-
-                # Extract interventions safely
-                interventions_list = study['protocolSection'].get('armsInterventionsModule', {}).get('interventions', [])
-                interventions = ', '.join([intervention.get('name', 'No intervention name listed') for intervention in interventions_list]) if interventions_list else "No interventions listed"
-                
-                # Extract locations safely
-                locations_list = study['protocolSection'].get('contactsLocationsModule', {}).get('locations', [])
-                # location_facilities = 
-                locations = ', '.join([f"{location.get('city', 'No City')} / {location.get('state', 'No State')} / {location.get('country', 'No Country')}" for location in locations_list]) if locations_list else "No locations listed"
-                
-                # Extract contact info 
-                centralContact = study['protocolSection'].get('contactsLocationsModule', {}).get('centralContacts', [])
-                contacts = ', '.join([f"{contact.get('name', 'No Name')} -  {contact.get('role', 'No Role')} - {contact.get('phone', 'No Phone')} - {contact.get('phoneExt', 'No Phone Ext')} - {contact.get('email', 'No email')}" for contact in centralContact]) if centralContact else "No contact listed"
-
-                # Extract dates and phases
-                primaryCompletionDate = study['protocolSection']['statusModule'].get('primaryCompletionDateStruct', {}).get('date', 'Unknown Date')
-                studyFirstPostDate = study['protocolSection']['statusModule'].get('studyFirstPostDateStruct', {}).get('date', 'Unknown Date')
-                lastUpdatePostDate = study['protocolSection']['statusModule'].get('lastUpdatePostDateStruct', {}).get('date', 'Unknown Date')
-                studyType = study['protocolSection']['designModule'].get('studyType', 'Unknown')
-                phases = ', '.join(study['protocolSection']['designModule'].get('phases', ['Not Available']))
-
-                # Extract eligibility requirements safely 
-                eligibilityCriteria = study['protocolSection']['eligibilityModule'].get('eligibilityCriteria', {})
-                sex = study['protocolSection']['eligibilityModule'].get('sex', {})
-                genderDescription = study['protocolSection']['eligibilityModule'].get('genderDescription', 'Unknown')
-                minimumAge = study['protocolSection']['eligibilityModule'].get('minimumAge', 'Unknown')
-                maximumAge = study['protocolSection']['eligibilityModule'].get('maximumAge', 'Unknown')
-                # phases = ', '.join(study['protocolSection']['designModule'].get('phases', ['Not Available']))
-
+                record = process_ctg_record(study)
                 # Append the data to the list as a dictionary
-                data_list.append({
-                    "NCT ID": nctId,
-                    "Acronym": acronym,
-                    "briefTitle": briefTitle, 
-                    # "officialTitle": officialTitle, 
-                    "briefSummary": briefSummary, 
-                    "Overall Status": overallStatus,
-                    "Start Date": startDate,
-                    "Conditions": conditions,
-                    "Interventions": interventions,
-                    "Locations": locations,
-                    "Contacts": contacts, 
-                    "Primary Completion Date": primaryCompletionDate,
-                    "Study First Post Date": studyFirstPostDate,
-                    "Last Update Post Date": lastUpdatePostDate,
-                    "Study Type": studyType,
-                    "Phases": phases,
-                    
-                    # 
-                    "Eligibility Criteria": eligibilityCriteria,
-                    "Sex": sex,
-                    # "Gender": genderDescription,
-                    "Min Age": minimumAge,
-                    "Max Age": maximumAge,
-                })
+                data_list.append(record) 
 
             # Check for nextPageToken and update the params or break the loop
             nextPageToken = data.get('nextPageToken')
@@ -109,23 +140,16 @@ def get_ctg_records(cond, intr, locn, status):
                 break  # Exit the loop if no nextPageToken is present
         else:
             print("Failed to fetch data. Status code:", response.status_code, response.text)
-
-            ### TODO: return a default dataframe? 
             break
-
+    
     if len(data_list)>0: 
         df = pd.DataFrame(data_list)
     else: 
         df = pd.DataFrame()
         return df 
-        ## process age to integers 
+    ## process age to integers 
     try:
-        df['Min Age'].dropna(inplace=True)
-        df['Max Age'].dropna(inplace=True)
-        df['Min Age'].replace('Unknown', '0 years', inplace=True)
-        df['Max Age'][(df['Max Age'] == 'Unknown')] = df['Min Age']
-        df['Min Age'] = df['Min Age'].apply(lambda x: [int(i) for i in x.split() if i.isdigit()][0])
-        df['Max Age'] = df['Max Age'].apply(lambda x: [int(i) for i in x.split() if i.isdigit()][0])
+        df = process_age_columns(df)
     except: 
         print('age not processed. ') 
 
@@ -134,7 +158,15 @@ def get_ctg_records(cond, intr, locn, status):
     print('got all records', df.shape)
     return df
 
-def get_ctg_by_ids(ids):
+def get_ctg_by_ids(ids:list[str]) -> pd.DataFrame:
+    """Get clinical trial records given IDs. 
+
+    Args:
+        ids (List): list of NCT IDs of trials. 
+
+    Returns:
+        df (pd.DataFrame): extracted trial info dataframe. 
+    """    
     # Initial URL for the first API call
     base_url = "https://clinicaltrials.gov/api/v2/studies"
     # Initialize an empty list to store the data
@@ -144,98 +176,25 @@ def get_ctg_by_ids(ids):
             'filter.ids': id, 
             "pageSize": 1, 
         }
-        # Loop until there is no nextPageToken / no ids left 
-        n_page = 0
-        while n_page<1 and True:
-            # Print the current URL (for debugging purposes)
-            n_page += 1
-            print("Fetching data from:", base_url + '?' + '&'.join([f"{k}={v}" for k, v in params.items()]))
+        # Get the  trial that returned from this ID
+        print("Fetching data from:", base_url + '?' + '&'.join([f"{k}={v}" for k, v in params.items()]))
             
-            # Send a GET request to the API
-            response = requests.get(base_url, params=params)
+        # Send a GET request to the API
+        response = requests.get(base_url, params=params)
 
-            # Check if the request was successful
-            if response.status_code == 200:
-                data = response.json()  # Parse JSON response
-                studies = data.get('studies', [])  # Extract the list of studies
+        # Check if the request was successful
+        if response.status_code == 200:
+            data = response.json()  # Parse JSON response
+            studies = data.get('studies', [])  # Extract the list of studies
 
-                # Loop through each study and extract specific information
-                for study in studies:
-                    # Safely access nested keys
-                    nctId = study['protocolSection']['identificationModule'].get('nctId', 'Unknown')
-                    briefTitle = study['protocolSection']['identificationModule'].get('briefTitle', 'Unknown')
-                    officialTitle = study['protocolSection']['identificationModule'].get('OfficialTitle', 'Unknown')
-                    briefSummary = study['protocolSection']['descriptionModule'].get('briefSummary', 'Unknown')
-                    overallStatus = study['protocolSection']['statusModule'].get('overallStatus', 'Unknown')
-                    startDate = study['protocolSection']['statusModule'].get('startDateStruct', {}).get('date', 'Unknown Date')
-                    conditions = ', '.join(study['protocolSection']['conditionsModule'].get('conditions', ['No conditions listed']))
-                    acronym = study['protocolSection']['identificationModule'].get('acronym', 'Unknown')
-                    # nctId = study['protocolSection']['identificationModule'].get('nctId', 'Unknown')
-
-                    # Extract interventions safely
-                    interventions_list = study['protocolSection'].get('armsInterventionsModule', {}).get('interventions', [])
-                    interventions = ', '.join([intervention.get('name', 'No intervention name listed') for intervention in interventions_list]) if interventions_list else "No interventions listed"
-                    
-                    # Extract locations safely
-                    locations_list = study['protocolSection'].get('contactsLocationsModule', {}).get('locations', [])
-                    # location_facilities = 
-                    locations = ', '.join([f"{location.get('city', 'No City')} / {location.get('state', 'No State')} / {location.get('country', 'No Country')}" for location in locations_list]) if locations_list else "No locations listed"
-                    
-                    # Extract contact info 
-                    centralContact = study['protocolSection'].get('contactsLocationsModule', {}).get('centralContacts', [])
-                    contacts = ', '.join([f"{contact.get('name', 'No Name')} -  {contact.get('role', 'No Role')} - {contact.get('phone', 'No Phone')} - {contact.get('phoneExt', 'No Phone Ext')} - {contact.get('email', 'No email')}" for contact in centralContact]) if centralContact else "No contact listed"
-
-                    # Extract dates and phases
-                    primaryCompletionDate = study['protocolSection']['statusModule'].get('primaryCompletionDateStruct', {}).get('date', 'Unknown Date')
-                    studyFirstPostDate = study['protocolSection']['statusModule'].get('studyFirstPostDateStruct', {}).get('date', 'Unknown Date')
-                    lastUpdatePostDate = study['protocolSection']['statusModule'].get('lastUpdatePostDateStruct', {}).get('date', 'Unknown Date')
-                    studyType = study['protocolSection']['designModule'].get('studyType', 'Unknown')
-                    phases = ', '.join(study['protocolSection']['designModule'].get('phases', ['Not Available']))
-
-                    # Extract eligibility requirements safely 
-                    eligibilityCriteria = study['protocolSection']['eligibilityModule'].get('eligibilityCriteria', {})
-                    sex = study['protocolSection']['eligibilityModule'].get('sex', {})
-                    genderDescription = study['protocolSection']['eligibilityModule'].get('genderDescription', 'Unknown')
-                    minimumAge = study['protocolSection']['eligibilityModule'].get('minimumAge', 'Unknown')
-                    maximumAge = study['protocolSection']['eligibilityModule'].get('maximumAge', 'Unknown')
-                    # phases = ', '.join(study['protocolSection']['designModule'].get('phases', ['Not Available']))
-
-                    # Append the data to the list as a dictionary
-                    data_list.append({
-                        "NCT ID": nctId,
-                        "Acronym": acronym,
-                        "briefTitle": briefTitle, 
-                        # "officialTitle": officialTitle, 
-                        "briefSummary": briefSummary, 
-                        "Overall Status": overallStatus,
-                        "Start Date": startDate,
-                        "Conditions": conditions,
-                        "Interventions": interventions,
-                        "Locations": locations,
-                        "Contacts": contacts, 
-                        "Primary Completion Date": primaryCompletionDate,
-                        "Study First Post Date": studyFirstPostDate,
-                        "Last Update Post Date": lastUpdatePostDate,
-                        "Study Type": studyType,
-                        "Phases": phases,
-                        
-                        # 
-                        "Eligibility Criteria": eligibilityCriteria,
-                        "Sex": sex,
-                        # "Gender": genderDescription,
-                        "Min Age": minimumAge,
-                        "Max Age": maximumAge,
-                    })
-
-                # Check for nextPageToken and update the params or break the loop
-                nextPageToken = data.get('nextPageToken')
-                if nextPageToken:
-                    params['pageToken'] = nextPageToken  # Set the pageToken for the next request
-                else:
-                    break  # Exit the loop if no nextPageToken is present
-            else:
-                print("Failed to fetch data. Status code:", response.status_code, response.text)
-                break
+            # Loop through each study and extract specific information
+            for study in studies:
+                record = process_ctg_record(study)
+                # Append the data to the list as a dictionary
+                data_list.append(record)
+        else:
+            print("Failed to fetch data. Status code:", response.status_code, response.text)
+            break
     
 
     if len(data_list)>0: 
@@ -285,6 +244,14 @@ def get_pie_graph_options(name, data):
     return options 
 
 def get_locations_df(df): 
+    """Match the extracted location with latitude/longitude info from source geospatial info file. 
+
+    Args:
+        df (pd.DataFrame): extracted trial df with city/state/country info.  
+
+    Returns:
+        df_locs_formap: df with long/lat spatial coordinates. 
+    """    
     cities_list = [cities.split(', ') for cities in df['Locations'].values.tolist()]
     cities_list = [city for cities in cities_list for city in cities if '/' in city and len(city.split(' / '))==3]
     cities = [city.split(' / ')[0] for city in cities_list]
@@ -295,5 +262,4 @@ def get_locations_df(df):
     df_cities_geo = pd.read_csv('./data/worldcities.csv')
     df_locs_formap = pd.merge(df_locs, df_cities_geo[['city', 'lat', 'lng', 'admin_name', 'country']], left_on=['city', 'state', 'country'], right_on=['city', 'admin_name', 'country'], how='inner')
     df_locs_formap['counts'] = df_locs_formap['counts']*100
-    # print(df_locs_formap)
     return df_locs_formap

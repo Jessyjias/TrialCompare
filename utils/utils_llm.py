@@ -53,8 +53,6 @@ def summarizer(key, summary, type='briefSummary'):
         'eligCriteria': ELIG_SUMMARIZER_SYS_PROMPT, 
     }
 
-    # summary='This clinical trial compares two supplemental topical agents (Aquaphor and Miaderm) for the treatment of acute radiation dermatitis in patients with breast cancer undergoing radiation therapy. Radiation dermatitis is a radiation-induced skin reaction which can cause itching, swelling, pain, and general discomfort. Aquaphor is a commonly available, inexpensive, petrolatum-based multi-purpose ointment designed to protect and sooth extremely dry skin, chapped lips, cracked hands and feet, minor cuts and burns, and many other skin irritations. Miaderm is a water-based cream and contains ingredients like calendula, hyaluronate, and aloe vera which may help reduce occurrence and severity of radiation dermatitis. Both are commonly recommended and used by breast cancer patients undergoing external beam radiation therapy (EBRT). However, it is not known whether one is better than the other in treating or preventing radiation dermatitis.'
-
     simple_summarizer = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
@@ -62,8 +60,6 @@ def summarizer(key, summary, type='briefSummary'):
         {"role": "user", "content": "Summarize and explain this trial based on the brief summary: "+summary}
     ]
     )
-
-    # print(simple_summarizer.choices[0].message.content)
 
     return simple_summarizer.choices[0].message.content
 
@@ -77,8 +73,6 @@ def comparator(key, sum_list, type='briefSummary'):
         'eligCriteria': ELIG_COMPARER_SYS_PROMPT, 
     }
 
-    # summary='This clinical trial compares two supplemental topical agents (Aquaphor and Miaderm) for the treatment of acute radiation dermatitis in patients with breast cancer undergoing radiation therapy. Radiation dermatitis is a radiation-induced skin reaction which can cause itching, swelling, pain, and general discomfort. Aquaphor is a commonly available, inexpensive, petrolatum-based multi-purpose ointment designed to protect and sooth extremely dry skin, chapped lips, cracked hands and feet, minor cuts and burns, and many other skin irritations. Miaderm is a water-based cream and contains ingredients like calendula, hyaluronate, and aloe vera which may help reduce occurrence and severity of radiation dermatitis. Both are commonly recommended and used by breast cancer patients undergoing external beam radiation therapy (EBRT). However, it is not known whether one is better than the other in treating or preventing radiation dermatitis.'
-
     simple_comparer = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
@@ -86,7 +80,5 @@ def comparator(key, sum_list, type='briefSummary'):
         {"role": "user", "content": "First trial info: "+sum_list[0] + "\n\n" + "Second trial info: "+sum_list[1] }
     ]
     )
-
-    # print(simple_summarizer.choices[0].message.content)
 
     return simple_comparer.choices[0].message.content
