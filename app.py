@@ -118,39 +118,6 @@ def display_analysis(df:pd.DataFrame):
         longitude='lng',
         size='counts')
 
-# -- Set page config
-apptitle = 'SimpleTrials'
-
-st.set_page_config(page_title=apptitle, page_icon=":sparkles:")
-
-## -- set some states 
-if "demo_search_clicked" not in st.session_state:
-    st.session_state.demo_search_clicked = False
-if 'form_submit_clicked' not in st.session_state:
-    st.session_state.form_submit_clicked = False
-if 'df_ct' not in st.session_state:
-    st.session_state.df_ct = pd.DataFrame()
-if 'trial_index' not in st.session_state:
-    st.session_state.trial_index = 0 
-if 'search_params' not in st.session_state:
-    st.session_state.search_params = []
-if "next_trial_clicked" not in st.session_state:
-    st.session_state.next_trial_clicked = False
-if "prev_trial_clicked" not in st.session_state:
-    st.session_state.prev_trial_clicked = False
-if "nctformsubmit_clicked" not in st.session_state: 
-    st.session_state.nctformsubmit_clicked = False
-
-## some css modifications 
-st.markdown("""
-    <style>
-        .stMultiSelect [data-baseweb=select] span{
-            max-width: 300px;
-            font-size: 0.8rem;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
 # button callbacks 
 def callback_formsubmit():
     st.session_state.form_submit_clicked = True
@@ -354,6 +321,39 @@ if __name__=="__main__":
             msg = st.warning('Please enter your credentials!', icon='⚠️')
         else:
             msg = st.success('Proceed to playing with the app!', icon='👉')
+    # -- Set page config
+    apptitle = 'SimpleTrials'
+
+    st.set_page_config(page_title=apptitle, page_icon=":sparkles:", layout="wide")
+
+    ## -- set some states 
+    if "demo_search_clicked" not in st.session_state:
+        st.session_state.demo_search_clicked = False
+    if 'form_submit_clicked' not in st.session_state:
+        st.session_state.form_submit_clicked = False
+    if 'df_ct' not in st.session_state:
+        st.session_state.df_ct = pd.DataFrame()
+    if 'trial_index' not in st.session_state:
+        st.session_state.trial_index = 0 
+    if 'search_params' not in st.session_state:
+        st.session_state.search_params = []
+    if "next_trial_clicked" not in st.session_state:
+        st.session_state.next_trial_clicked = False
+    if "prev_trial_clicked" not in st.session_state:
+        st.session_state.prev_trial_clicked = False
+    if "nctformsubmit_clicked" not in st.session_state: 
+        st.session_state.nctformsubmit_clicked = False
+
+    ## some css modifications 
+    st.markdown("""
+        <style>
+            .stMultiSelect [data-baseweb=select] span{
+                max-width: 300px;
+                font-size: 0.8rem;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+    
     st.title("SimpleTrials")
     st.markdown(
         '<p>Discover clinical trials with SimpleTrials—where clarity meets opportunity in your search for the right trial.  <a href="https://youtu.be/E0vAKmYf1jg">Watch demo video</a> </p>' +
